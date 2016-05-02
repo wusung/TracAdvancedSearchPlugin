@@ -9,6 +9,7 @@ VERSION = '0.6.1'
 REQUIRES = [
 	'Trac>=0.11',
 	'pysolr>=2.0.14',
+	'elasticsearch>=2.0.0',
 ]
 
 if sys.version_info[:4] < (2, 6):
