@@ -4,7 +4,6 @@ Backends for TracAdvancedSearchPlugin which implement IAdvSearchBackend.
 import datetime
 import itertools
 import locale
-import pysolr
 import sys
 import threading
 import time
@@ -217,7 +216,7 @@ class PyElasticSearchBackEnd(Component):
 	implements(IAdvSearchBackend)
 
 	SOLR_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-	INPUT_DATE_FORMAT = "%a %b %d %Y"
+        INPUT_DATE_FORMAT = "%a %b %d %Y %H:%M:%S"
 	DEFAULT_DATE_ENCODING = "utf-8"
 
 	SPECIAL_CHARACTERS = r'''+-&|!(){}[]^"~*?:\\'''
@@ -292,11 +291,28 @@ class PyElasticSearchBackEnd(Component):
 		# add all fields
 		source = self._string_from_filters(criteria.get('source')) or 'wiki ticket'
 		author = self._string_from_input(criteria.get('author'))
-		time = self._date_from_range(
-			criteria.get('date_start'),
-			criteria.get('date_end')
-		)
-                self.log.warn(time) 
+
+                time_query = []
+                
+                self.log.warn('The query date range is %s ' % criteria.get('date_end'))
+                if criteria.get('date_start') or criteria.get('date_end'):
+                    (sdate, edate) = self._date_from_range(
+                            criteria.get('date_start'),
+                            criteria.get('date_end'))
+                    time_query = [{
+                          "range": {
+                            "changetime": {
+                              "gte": sdate
+                            }
+                          }
+                        }, {
+                          "range": {
+                            "changetime": {
+                              "lte": edate 
+                            }
+                          }
+                        }]
+
                 status = self._string_from_filters(criteria.get('ticket_statuses')) or ''
 
                 status_query = []
@@ -327,6 +343,7 @@ class PyElasticSearchBackEnd(Component):
                             ] + status_query 
                               + source_query 
                               + author_query
+                              + time_query
                           }
                         },
                         "from": start,
@@ -459,16 +476,15 @@ class PyElasticSearchBackEnd(Component):
 	def _date_from_range(self, start, end):
 		"""Return a date range in solr query syntax."""
 		if not start and not end:
-			return None
-
+                    return (None, None)
 		if start:
-			start_formatted = self._format_date(start)
+                    start_formatted = self._format_date(start + ' 0:0:0')
 		else:
-			start_formatted = self._format_date(datetime.datetime(1970,1,1))
+                    start_formatted = self._format_date('Fri Jan 1 1970 0:0:0')
 		if end:
-			end_formatted = self._format_date(end)
+                    end_formatted = self._format_date(end + ' 23:59:59')
 		else:
-			end_formatted = self._format_date(datetime.datetime(2200, 1, 1))
+                    end_formatted = self._format_date('Fri Jan 1 2200 23:59:59')
 		return (start_formatted, end_formatted)
 
 	def _format_date(self, date_string, default="*"):
@@ -479,7 +495,8 @@ class PyElasticSearchBackEnd(Component):
 		except ValueError:
 			self.log.warn("Invalid date format: %s" % date_string)
 			return default
-		return date.strftime(self.SOLR_DATE_FORMAT)
+		#return date.strftime(self.SOLR_DATE_FORMAT)
+                return date
 
 	def _strptime(self, date_string, date_format):
 		return datetime.datetime(*(time.strptime(date_string, date_format)[0:6]))
