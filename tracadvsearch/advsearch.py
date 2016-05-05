@@ -49,12 +49,12 @@ CONFIG_FIELD = {
 	'ticket_status': (
 		CONFIG_SECTION_NAME,
 		'ticket_status',
-		'new, assigned, reopened, closed',
+		'new, accepted, assigned, reopened, closed',
 	),
 	'ticket_status_enable': (
 		CONFIG_SECTION_NAME,
 		'ticket_status_enable',
-		'new, assigned, reopened',
+		'new, accepted, assigned, reopened',
 	),
 }
 
