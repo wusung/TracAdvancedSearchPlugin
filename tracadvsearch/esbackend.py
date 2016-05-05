@@ -23,11 +23,11 @@ from elasticsearch import Elasticsearch
 # config for elasticsearch
 INDEX = 'trac'
 DOC_TYPE = 'ticket'
-CONFIG_SECTION_NAME = 'pysolr_search_backend'
+CONFIG_SECTION_NAME = 'advanced_search_backend'
 CONFIG_FIELD = {
-	'solr_url': (
+	'elastic_search_url': (
 		CONFIG_SECTION_NAME,
-		'solr_url',
+		'elastic_search_url',
 		None,
 	),
 	'timeout': (
@@ -213,7 +213,7 @@ class AsyncSolrIndexer(threading.Thread):
                 self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=identifier)
 
 class PyElasticSearchBackEnd(Component):
-        """AdvancedSearchBackend that uses pysolr lib to search Elasticsearch."""
+        """AdvancedSearchBackend that uses python lib to search Elasticsearch."""
 	implements(IAdvSearchBackend)
 
 	SOLR_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -223,7 +223,7 @@ class PyElasticSearchBackEnd(Component):
 	SPECIAL_CHARACTERS = r'''+-&|!(){}[]^"~*?:\\'''
 
 	def __init__(self):
-		solr_url = self.config.get(*CONFIG_FIELD['solr_url'])
+		solr_url = self.config.get(*CONFIG_FIELD['elastic_search_url'])
 		timeout = self.config.getfloat(*CONFIG_FIELD['timeout'])
 		if not solr_url:
 			raise ConfigurationError('PySolrSearchBackend must be configured in trac.ini')

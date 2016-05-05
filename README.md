@@ -5,12 +5,12 @@ Trac Advanced Search Plugin
 An advanced search plugin for the open source Trac project
 (http://trac.edgewall.org/). This Trac plugin allows you to use a full-text
 search engine (such as Apache Solr) as the search backend for performing
-search in Trac.  This plugin also includes a backend for Apache Solr
-(http://lucene.apache.org/solr/), but other plugins can use the extension point
+search in Trac.  This plugin also includes a backend for Elasticsearch
+(https://www.elastic.co/products/elasticsearch), but other plugins can use the extension point
 provided by this plugin to query a different backend.
 
-This plugin is known to be compatible with Trac 0.12 with Solr 3.1, as well as
-Trac 1.0.1 with Solr 4.3.1.
+This plugin is known to be compatible with Trac 0.12 with Elasticsearch 2, as well as
+Trac 1.0.11 with Elasticsearch 2.3.2.
 
 See the interface in `plugin-src/advsearch/interface.py` for details about which
 methods to implement.
@@ -41,7 +41,7 @@ Requirements
 
 The following python packages are required for the solr backend.
 
-pysolr (https://github.com/toastdriven/pysolr)
+Python client for Elasticsearch (https://pypi.python.org/pypi/elasticsearch)
 
 
 
@@ -82,8 +82,8 @@ In `trac.ini` you'll need to configure whichever search backend you're using.  I
 you're using the default pysolr backend, add something like this:
 
 ```
-[pysolr_search_backend]
-solr_url = http://localhost:8983/solr/
+[advanced_search_backend]
+elastic_searc_url = http://localhost:9200/
 timeout = 30
 
 [advanced_search_plugin]
@@ -92,11 +92,11 @@ menu_label = Real Search
 
 button_label and timeout are both optional.
 
-The default pysolr backend queries to solr for indexing synchronously.
+The default Elasticsearch backend queries to solr for indexing synchronously.
 If you want to do indexing asynchronously, add like this:
 
 ```
-[pysolr_search_backend]
+[advanced_search_backend]
 async_indexing = true
 async_queue_maxsize = 10000  # if 0, the queue size is infinity
 ...
@@ -107,7 +107,7 @@ You'll also need to enable the components.
 ```
 [components]
 tracadvsearch.advsearch.* = enabled
-tracadvsearch.backend.* = enabled
+tracadvsearch.esbackend.* = enabled
 ```
 
 

@@ -1,4 +1,4 @@
 from advsearch import SearchBackendException
 from advsearch import AdvancedSearchPlugin
-from esbackend import PySolrSearchBackEnd
+from esbackend import PyElasticSearchBackEnd
 from interface import IAdvSearchBackend
