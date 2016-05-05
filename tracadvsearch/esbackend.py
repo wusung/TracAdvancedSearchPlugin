@@ -23,11 +23,11 @@ from elasticsearch import Elasticsearch
 # config for elasticsearch
 INDEX = 'trac'
 DOC_TYPE = 'ticket'
-CONFIG_SECTION_NAME = 'pysolr_search_backend'
+CONFIG_SECTION_NAME = 'advanced_search_backend'
 CONFIG_FIELD = {
-	'solr_url': (
+	'elastic_search_url': (
 		CONFIG_SECTION_NAME,
-		'solr_url',
+		'elastic_search_url',
 		None,
 	),
 	'timeout': (
@@ -212,8 +212,8 @@ class AsyncSolrIndexer(threading.Thread):
 		self.backend.log.debug('%s: delete id=%s' % (self._name, identifier))
                 self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=identifier)
 
-class PySolrSearchBackEnd(Component):
-	"""AdvancedSearchBackend that uses pysolr lib to search Solr."""
+class PyElasticSearchBackEnd(Component):
+        """AdvancedSearchBackend that uses python lib to search Elasticsearch."""
 	implements(IAdvSearchBackend)
 
 	SOLR_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -223,7 +223,7 @@ class PySolrSearchBackEnd(Component):
 	SPECIAL_CHARACTERS = r'''+-&|!(){}[]^"~*?:\\'''
 
 	def __init__(self):
-		solr_url = self.config.get(*CONFIG_FIELD['solr_url'])
+		solr_url = self.config.get(*CONFIG_FIELD['elastic_search_url'])
 		timeout = self.config.getfloat(*CONFIG_FIELD['timeout'])
 		if not solr_url:
 			raise ConfigurationError('PySolrSearchBackend must be configured in trac.ini')
@@ -251,11 +251,11 @@ class PySolrSearchBackEnd(Component):
 	def delete_document(self, identifier):
 		self.indexer.delete(identifier)
 
-        def query_document(self, id):
+        def query_document(self, ticket_id):
                 doc = {
                             "query": {
                                 "term": {
-                                    "ticket_id": id
+                                    "ticket_id": ticket_id
                                 }
                             }
                       } 
@@ -265,56 +265,88 @@ class PySolrSearchBackEnd(Component):
                         body=doc)
                 if res["hits"]["total"] == "0":
                     return None
-                return res["hits"]["hits"]["_source"]
+                return res["hits"]["hits"][0]["_source"]
 
 	def query_backend(self, criteria):
 		"""Send a query to elasticsearch."""
                 
 		# distribute our search query to several fields
                 limit = criteria.get('per_page', 15)
+
+                sort = []
 		if criteria.get('sort_order') == 'oldest':
-		    sort = 'time asc'
+                    sort = [{'changetime': { 'order': 'asc' }}]
 		elif criteria.get('sort_order') == 'newest':
-		    sort = 'time desc'
+                    sort = [{'changetime': { 'order': 'desc' }}]
 		else: # sort by relevance
 		    pass
 
 		# try to find a start offset
+                start = 0
 		start_point = criteria['start_points'].get(self.get_name())
 		if start_point:
 		    start = start_point
 
+                size = criteria.get('per_page', 15)
+
 		# add all fields
-		source = self._string_from_filters(criteria.get('source')) or '("wiki" OR "ticket")'
+		source = self._string_from_filters(criteria.get('source')) or 'wiki ticket'
 		author = self._string_from_input(criteria.get('author'))
 		time = self._date_from_range(
 			criteria.get('date_start'),
 			criteria.get('date_end')
 		)
+                self.log.warn(time) 
+                status = self._string_from_filters(criteria.get('ticket_statuses')) or ''
+
+                status_query = []
+                if self._string_from_filters(criteria.get('ticket_statuses')):
+                    status_query = [{ "match": { "status": self._string_from_filters(criteria.get('ticket_statuses')) }}]
+
+                source_query = []
+                if self._string_from_filters(criteria.get('source')):
+                    source_query = [{ "match": { "source": self._string_from_filters(criteria.get('source')) }}]
+
+                author_query = []
+                if self._string_from_input(criteria.get('author')):
+                    author_query = [{ 'match': { 'author': self._string_from_input(criteria.get('author')) }}]
 
                 doc = {
-                         "query": {
-                            "match": {
-                                "text": {
-                                    "query": criteria['q'],
-                                    "fuzziness": 2
-                                } 
-                            }
-                         }
+                        "query": {
+                          "bool": {
+                            "must": [
+                              {
+                                "multi_match": {
+                                  "query": criteria['q'],
+                                  "fuzziness": 2,
+                                  "type": "most_fields",
+                                  "fields": ["name", "text"],
+                                  "operator": "or"
+                                }
+                              }
+                            ] + status_query 
+                              + source_query 
+                              + author_query
+                          }
+                        },
+                        "from": start,
+                        "size": size,
+                        "sort": sort
                       } 
+
+                self.log.warn('The query doc is %s' % doc)
                 
                 results = self.conn.search(
                         index=INDEX,
                         doc_type=DOC_TYPE,
                         body=doc)
 	        # restruct the data of results	
-                res = []
-                for v in results["hits"]["hits"]:
+                def _to_result(v):
                     i = v["_source"]
                     i["score"] = v["_score"]
-                    res.append(i)
-
-                return (results["hits"]["total"], res)
+                    return i
+                return (results["hits"]["total"], 
+                        [_to_result(v) for v in results["hits"]["hits"]])
 
 	def query_backend_solr(self, criteria):
 		"""Send a query to solr."""
@@ -409,7 +441,7 @@ class PySolrSearchBackEnd(Component):
 			return None
 
 		if type(value) in (list, tuple):
-			return "(%s)" % (" OR ".join(['"%s"' % v for v in value if v]))
+			return (" ".join(['"%s"' % v for v in value if v]))
 
 		return value
 
@@ -422,7 +454,7 @@ class PySolrSearchBackEnd(Component):
 			return None
 
 		# add filters that are set as active
-		return '("%s")' % ('" OR "'.join(name_list))
+		return (' '.join(name_list))
 
 	def _date_from_range(self, start, end):
 		"""Return a date range in solr query syntax."""
@@ -432,12 +464,12 @@ class PySolrSearchBackEnd(Component):
 		if start:
 			start_formatted = self._format_date(start)
 		else:
-			start_formatted = "*"
+			start_formatted = self._format_date(datetime.datetime(1970,1,1))
 		if end:
 			end_formatted = self._format_date(end)
 		else:
-			end_formatted = "*"
-		return "[%s TO %s]" % (start_formatted, end_formatted)
+			end_formatted = self._format_date(datetime.datetime(2200, 1, 1))
+		return (start_formatted, end_formatted)
 
 	def _format_date(self, date_string, default="*"):
 		"""Format a date as a solr date string."""
@@ -450,6 +482,12 @@ class PySolrSearchBackEnd(Component):
 		return date.strftime(self.SOLR_DATE_FORMAT)
 
 	def _strptime(self, date_string, date_format):
+		return datetime.datetime(*(time.strptime(date_string, date_format)[0:6]))
+
+        def _strp_stime(self, date_string, date_fomrat):
+		return datetime.datetime(*(time.strptime(date_string, date_format)[0:6]))
+
+	def _strp_etime(self, date_string, date_format):
 		return datetime.datetime(*(time.strptime(date_string, date_format)[0:6]))
 
         def _print_hits(results):

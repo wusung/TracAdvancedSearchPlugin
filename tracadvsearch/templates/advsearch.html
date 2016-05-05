@@ -107,32 +107,31 @@
 		  Results <span class="numresults">(${results.displayed_items()})</span>
 		</h2>
 		<div>
+          <py:if test="results.has_next_page">
+          </py:if>
 		  <div id="results">
 			<py:for each="idx, result in enumerate(results)">
 			  <div class="result ${((not idx % 2 and 'even') or None)}">
-			  <div class="result_header">
-				<span class="result_type ${result.status}">
-					${result.source}
-					<py:if test="result.source == 'ticket'">#${result.ticket_id}</py:if>
-				</span>
-				<a href="${result.href}" class="searchable">${result.title}</a>
-				<py:if test="result.source == 'ticket'">
-				  	<span class="ticket_details">
-					(${result.status} ${result.type}<py:if test="result.status == 'closed'">: ${result.resolution}</py:if>)
-					</span>
-				</py:if>
-			  </div>
-			  <div class="result_summary searchable">${result.summary}</div>
-			  <div class="result_footer">
-				<py:if test="result.author">
-					<span class="author" i18n:msg="author">By ${format_author(result.author)}</span> &mdash;
-				</py:if>
-				<span class="date">${result.date}</span>
-			  </div>
+              <dt>
+                <a href="${result.href}" class="searchable">
+                  <span class="result_type ${result.status}"> 
+                  <py:if test="result.source == 'ticket'">#${result.ticket_id}</py:if>
+                  </span>: ${result.type}:
+                  <span class="searchword0">test
+                  </span>${result.ticket_id} (${result.status}) 
+                </a> 
+              </dt>
+              <dd class="searchable">${result.name}</dd> 
+                <dd> 
+                 <span class="author" i18n:msg="author">By ${format_author(result.author)}</span> — 
+                 <span class="date">${result.time}</span> 
+                </dd>
 			  </div>
 			</py:for>
 		  </div>
 
+          <py:if test="results.has_next_page">
+          </py:if>
 		  <py:if test="results.has_next_page">
 	  		<p>
 			  <a href="#" onclick="return next_page(${start_points})">Next Page (${page+1})</a>
