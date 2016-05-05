@@ -83,7 +83,7 @@ you're using the default pysolr backend, add something like this:
 
 ```
 [advanced_search_backend]
-elastic_searc_url = http://localhost:9200/
+elastic_search_url = http://localhost:9200/
 timeout = 30
 
 [advanced_search_plugin]
