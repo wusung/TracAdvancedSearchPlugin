@@ -63,12 +63,9 @@ configuration files provided.
 cp ./solr/conf/* <solr_home>/conf
 ```
 
-3. Index your current tickets and wiki pages in the search backend.  If you're
-using solr, see `./solr/conf/data-config.xml`
+3. Configure your trac.ini (see the Configuration section below).
 
-4. Configure your trac.ini (see the Configuration section below).
-
-5. Restart the trac server. This will differ based on how you are running trac
+4. Restart the trac server. This will differ based on how you are running trac
 (apache, tracd, etc).
 
 That's it. You should see an Advanced Search button in the main navbar.
