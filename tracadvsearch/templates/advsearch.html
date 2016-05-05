@@ -115,13 +115,14 @@
               <dt>
                 <a href="${result.href}" class="searchable">
                   <span class="result_type ${result.status}"> 
-                  <py:if test="result.source == 'ticket'">#${result.ticket_id}</py:if>
-                  </span>: ${result.type}:
-                  <span class="searchword0">test
-                  </span>${result.ticket_id} (${result.status}) 
+                  <py:if test="result.source == 'ticket'">#${result.ticket_id}:</py:if>
+                  </span>
+                  <span>
+                  ${result.name} (${result.status}) 
+                  </span>
                 </a> 
               </dt>
-              <dd class="searchable">${result.name}</dd> 
+              <dd class="searchable">${result.text}</dd> 
                 <dd> 
                  <span class="author" i18n:msg="author">By ${format_author(result.author)}</span> — 
                  <span class="date">${result.time}</span> 
