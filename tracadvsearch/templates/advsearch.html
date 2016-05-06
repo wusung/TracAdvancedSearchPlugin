@@ -107,11 +107,23 @@
 		<div>
           <py:if test="results.has_more_pages">
           <div class="paging">
+            <py:if test="results.has_previous_page">
+            <span class="previous">
+                <a href="#" title="${_('Previous Page')}" 
+                    onclick="return jump_page(${start_points}, ${results.page}, ${per_page})">←</a>
+            </span>
+            </py:if>
             <py:for each="i in range(0, results.num_pages)">
-              <span class=" ${i == results.page or None}">
+              <span class="${current if i == (results.page-1) else ''}">
                   <a title="Page ${i+1}" href="#" onclick="return jump_page(${start_points}, ${i+1}, ${per_page})">${i+1}</a>
               </span>
             </py:for> 
+            <py:if test="results.has_next_page">
+            <span class="next">
+              <a href="#" title="${_('Next Page')}" 
+                  onclick="return jump_page(${start_points}, ${results.page+2}, ${per_page})">→</a>
+            </span>
+            </py:if>
           </div>
           </py:if>
 		  <div id="results">
@@ -135,14 +147,28 @@
 			  </div>
 			</py:for>
 		  </div>
-
-          <py:if test="results.has_next_page">
+          <py:if test="results.has_more_pages">
+          <div class="paging">
+            <py:if test="results.has_previous_page">
+            <span class="previous">
+                <a href="#" title="${_('Previous Page')}" 
+                    onclick="return jump_page(${start_points}, ${results.page}, ${per_page})">←</a>
+            </span>
+            </py:if>
+            <py:for each="i in range(0, results.num_pages)">
+              <span class="${current if i == (results.page-1) else ''}">
+                  <a title="Page ${i+1}" href="#" onclick="return jump_page(${start_points}, ${i+1}, ${per_page})">${i+1}</a>
+              </span>
+            </py:for> 
+            <py:if test="results.has_next_page">
+            <span class="next">
+              <a href="#" title="${_('Next Page')}" 
+                  onclick="return jump_page(${start_points}, ${results.page+2}, ${per_page})">→</a>
+            </span>
+            </py:if>
+          </div>
           </py:if>
-		  <py:if test="results.has_next_page">
-	  		<p>
-			  <a href="#" onclick="return next_page(${start_points})">Next Page (${page+1})</a>
-			</p>
-		  </py:if>
+	
 		</div>
 	  </py:if>
 
