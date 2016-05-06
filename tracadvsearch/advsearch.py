@@ -127,7 +127,8 @@ class AdvancedSearchPlugin(Component):
 	# IRequestHandler methods
 	def match_request(self, req):
 		# TODO: add /search if search module is disabled
-		return re.match(r'/advsearch?', req.path_info) is not None
+		return re.match(r'/advsearch?', req.path_info) is not None or \
+                     re.match(r'/search?', req.path_info) is not None
 
 	def process_request(self, req):
 		"""
