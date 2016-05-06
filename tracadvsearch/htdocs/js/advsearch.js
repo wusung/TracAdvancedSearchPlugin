@@ -1,6 +1,6 @@
 
 function jump_page(start_point_list, page, size) {
-    var url = get_page_url(start_point_list, page);
+    var url = get_page_url(start_point_list, page, size);
     document.location.search = "?" + url;
     return false;
 }
@@ -13,6 +13,7 @@ function get_page_url(start_point_list, page, size) {
 	// Join start points
 	//query_string += '&' + $.param(start_point_list);
 	query_string += '&PyElasticSearchBackEnd=' + (page * size);
+    query_string += '&from=' + ((page-1)*size);
 
 	return query_string;
 }

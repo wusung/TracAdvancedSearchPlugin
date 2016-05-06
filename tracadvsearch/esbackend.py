@@ -282,10 +282,10 @@ class PyElasticSearchBackEnd(Component):
 
 		# try to find a start offset
                 start = 0
-		start_point = criteria['start_points'].get(self.get_name())
-		if start_point:
-		    start = start_point
-
+		#start_point = criteria['start_points'].get(self.get_name())
+		if criteria.get('from'):
+		    start = criteria.get('from')
+                self.log.debug('start=%s', start)
                 size = criteria.get('per_page', 15)
 
 		# add criteria of all fields
@@ -362,72 +362,6 @@ class PyElasticSearchBackEnd(Component):
                     return i
                 return (results["hits"]["total"], 
                     [_to_result(v) for v in results["hits"]["hits"]])
-
-	def query_backend_solr(self, criteria):
-		"""Send a query to solr."""
-
-		q = {}
-		params = {
-			'fl': '*,score', # fields returned
-			'rows': criteria.get('per_page', 15),
-			# see https://cwiki.apache.org/confluence/display/solr/The+DisMax+Query+Parser
-			'defType': 'edismax',
-			# favor phrases in the ticket body, exact matches in the name
-			'pf': 'token_text name^2 ticket_id',
-			'qf': 'token_text name^2 ticket_id component milestone keywords',
-
-		}
-
-		if criteria.get('sort_order') == 'oldest':
-			params['sort'] = 'time asc'
-		elif criteria.get('sort_order') == 'newest':
-			params['sort'] = 'time desc'
-		else: # sort by relevance
-			pass
-
-		# try to find a start offset
-		start_point = criteria['start_points'].get(self.get_name())
-		if start_point:
-			params['start'] = start_point
-
-		# add all fields
-		q['source'] = self._string_from_filters(criteria.get('source')) or '("wiki" OR "ticket")'
-		q['author'] = self._string_from_input(criteria.get('author'))
-		q['time'] = self._date_from_range(
-			criteria.get('date_start'),
-			criteria.get('date_end')
-		)
-
-		# only include key/value pairs when the value is not empty
-		q_parts = []
-		for k, v in itertools.ifilter(lambda (k, v): v, q.iteritems()):
-			q_parts.append('%s:%s' % (k, v))
-
-		# Ticket only filters
-		status = self._string_from_filters(criteria.get('ticket_statuses'))
-		params['fq'] = '(status:(%s) OR source:"wiki")' % status
-
-		# distribute our search query to several fields
-		if 'q' in criteria and criteria['q']:
-			# edismax handles escaping for us
-			q_parts.append('(%s)' % criteria['q'])
-		else:
-			q_parts.append('*:*')
-
-		q_string = " AND ".join(q_parts)
-
-		try:
-			results = self.conn.search(q_string, **params)
-		except Exception, e:
-			raise SearchBackendException(e)
-		for result in results:
-			result['title'] = result['name']
-			result['summary'] = self._build_summary(result.get('text'), criteria['q'])
-			result['date'] = self._date_from_solr(result['time'])
-			del result['time']
-			del result['name']
-
-		return (results.hits, results.docs)
 
 	def _build_summary(self, text, query):
 		"""Build a summary which highlights the search terms."""

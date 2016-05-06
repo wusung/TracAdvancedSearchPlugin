@@ -163,6 +163,7 @@ class AdvancedSearchPlugin(Component):
 			'per_page': per_page,
 			'sort_order': sort_order,
 			'ticket_statuses': self._get_ticket_statuses(req.args),
+                        'from': req.args.getfirst('from')
 		}
 
 		# Initial page request
