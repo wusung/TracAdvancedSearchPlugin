@@ -97,9 +97,7 @@
 			</select>
 			</div>
 		</fieldset>
-
 		</div>
-
 	  </form>
 
 	  <py:if test="results"><hr />
@@ -107,7 +105,14 @@
 		  Results <span class="numresults">(${results.displayed_items()})</span>
 		</h2>
 		<div>
-          <py:if test="results.has_next_page">
+          <py:if test="results.has_more_pages">
+          <div class="paging">
+            <py:for each="i in range(0, results.num_pages)">
+              <span class=" ${i == results.page or None}">
+                  <a title="Page ${i+1}" href="#" onclick="return jump_page(${start_points}, ${i+1}, ${per_page})">${i+1}</a>
+              </span>
+            </py:for> 
+          </div>
           </py:if>
 		  <div id="results">
 			<py:for each="idx, result in enumerate(results)">

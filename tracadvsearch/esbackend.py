@@ -77,13 +77,13 @@ class SolrIndexer(object):
 	def upsert(self, doc):
 		try:
                         self.backend.conn.index(index=INDEX, doc_type=DOC_TYPE, body=doc)
-		except pysolr.SolrError, e:
+		except Exception, e:
 			raise SearchBackendException(e)
 
 	def delete(self, identifier):
 		try:
                         self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=identifier)
-		except pysolr.SolrError, e:
+		except Exception, e:
 			raise SearchBackendException(e)
 
 
@@ -288,13 +288,11 @@ class PyElasticSearchBackEnd(Component):
 
                 size = criteria.get('per_page', 15)
 
-		# add all fields
+		# add criteria of all fields
 		source = self._string_from_filters(criteria.get('source')) or 'wiki ticket'
 		author = self._string_from_input(criteria.get('author'))
 
                 time_query = []
-                
-                self.log.warn('The query date range is %s ' % criteria.get('date_end'))
                 if criteria.get('date_start') or criteria.get('date_end'):
                     (sdate, edate) = self._date_from_range(
                             criteria.get('date_start'),
@@ -351,19 +349,19 @@ class PyElasticSearchBackEnd(Component):
                         "sort": sort
                       } 
 
-                self.log.warn('The query doc is %s' % doc)
+                self.log.debug('The query doc is %s' % doc)
                 
                 results = self.conn.search(
                         index=INDEX,
                         doc_type=DOC_TYPE,
                         body=doc)
-	        # restruct the data of results	
+	        # restruct the results	
                 def _to_result(v):
                     i = v["_source"]
                     i["score"] = v["_score"]
                     return i
                 return (results["hits"]["total"], 
-                        [_to_result(v) for v in results["hits"]["hits"]])
+                    [_to_result(v) for v in results["hits"]["hits"]])
 
 	def query_backend_solr(self, criteria):
 		"""Send a query to solr."""
@@ -420,7 +418,7 @@ class PyElasticSearchBackEnd(Component):
 
 		try:
 			results = self.conn.search(q_string, **params)
-		except pysolr.SolrError, e:
+		except Exception, e:
 			raise SearchBackendException(e)
 		for result in results:
 			result['title'] = result['name']
@@ -495,7 +493,6 @@ class PyElasticSearchBackEnd(Component):
 		except ValueError:
 			self.log.warn("Invalid date format: %s" % date_string)
 			return default
-		#return date.strftime(self.SOLR_DATE_FORMAT)
                 return date
 
 	def _strptime(self, date_string, date_format):

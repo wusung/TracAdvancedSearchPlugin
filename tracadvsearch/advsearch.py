@@ -200,8 +200,9 @@ class AdvancedSearchPlugin(Component):
 		)
 
 		# pagination next/prev links
-		if data['results'].has_next_page:
-			data['start_points'] = StartPoints.format(results, data['start_points'])
+		#if data['results'].has_next_page:
+                self.log.debug('%s %s', len(results), data['start_points'])
+		data['start_points'] = StartPoints.format(results, data['start_points'])
 
 		return self._send_response(req, data)
 
@@ -435,7 +436,7 @@ class StartPoints(object):
 					prev_start = 0
 				start_points[backend_name] = prev_start
 			start_points[backend_name] += 1
-
+                
 		return json.dumps(
 			[
 				{
