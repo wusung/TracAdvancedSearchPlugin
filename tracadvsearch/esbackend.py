@@ -68,23 +68,45 @@ def _get_incremental_value(initial, next_, step):
 
 
 class SolrIndexer(object):
-	"""Synchronous Indexer for PySolrSearchBackEnd."""
-	implements(IIndexer)
+    """Synchronous Indexer for PyElasticSearchBackEnd."""
+    implements(IIndexer)
 
-	def __init__(self, backend):
-		self.backend = backend
+    def __init__(self, backend):
+            self.backend = backend
 
-	def upsert(self, doc):
-		try:
-                        self.backend.conn.index(index=INDEX, doc_type=DOC_TYPE, body=doc)
-		except Exception, e:
-			raise SearchBackendException(e)
+    def upsert(self, doc):
+        try:
+            self.backend.log.debug(doc)
+            self.delete(doc['ticket_id'])
+            self.backend.conn.index(index=INDEX, doc_type=DOC_TYPE, body=doc)
+            self.backend.log.debug(doc)
+        except Exception, e:
+            raise SearchBackendException(e)
 
-	def delete(self, identifier):
-		try:
-                        self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=identifier)
-		except Exception, e:
-			raise SearchBackendException(e)
+    def delete(self, ticket_id):
+        try:
+            _id = self._query_document_id(ticket_id)
+            self.backend.log.debug("delete old _id=%s", _id)
+            if _id:
+                self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=_id)
+        except Exception, e:
+            raise SearchBackendException(e)
+
+    def _query_document_id(self, ticket_id):
+        doc = {
+                "query": {
+                  "term": {
+                    "ticket_id": ticket_id
+                  }
+                }
+              } 
+        res = self.backend.conn.search(
+                index=INDEX,
+                doc_type=DOC_TYPE,
+                body=doc)
+        if res["hits"]["total"] == 0:
+            return None
+        return res["hits"]["hits"][0]["_id"]
 
 
 class SimpleLifoQueue(list):
@@ -251,20 +273,20 @@ class PyElasticSearchBackEnd(Component):
 		self.indexer.delete(identifier)
 
         def query_document(self, ticket_id):
-                doc = {
-                            "query": {
-                                "term": {
-                                    "ticket_id": ticket_id
-                                }
-                            }
-                      } 
-                res = self.conn.search(
-                        index=INDEX,
-                        doc_type=DOC_TYPE,
-                        body=doc)
-                if res["hits"]["total"] == "0":
-                    return None
-                return res["hits"]["hits"][0]["_source"]
+            doc = {
+                    "query": {
+                      "term": {
+                        "ticket_id": ticket_id
+                      }
+                    }
+                  } 
+            res = self.conn.search(
+                    index=INDEX,
+                    doc_type=DOC_TYPE,
+                    body=doc)
+            if res["hits"]["total"] == "0":
+                return None
+            return res["hits"]["hits"][0]["_source"]
 
 	def query_backend(self, criteria):
 		"""Send a query to elasticsearch."""
