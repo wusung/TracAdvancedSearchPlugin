@@ -370,6 +370,7 @@ class AdvancedSearchPlugin(Component):
 			'ticket_version': ticket['version'],
 			'name': ticket['summary'],
 			'text': '%s %s' % (ticket['description'], ' '.join(comments)),
+			'description': '%s %s' % (ticket['description'], ' '.join(comments)),
 		}
 		for prop in (
 			'type',
