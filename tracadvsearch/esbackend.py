@@ -85,14 +85,14 @@ class SolrIndexer(object):
 
     def delete(self, ticket_id):
         try:
-            _id = self._query_document_id(ticket_id)
-            self.backend.log.debug("delete old _id=%s", _id)
-            if _id:
-                self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=_id)
+            _id = self._query_by_ticket_id(ticket_id)
+            #self.backend.log.debug("delete old _id=%s", _id)
+            #if _id:
+            #    self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=_id)
         except Exception, e:
             raise SearchBackendException(e)
 
-    def _query_document_id(self, ticket_id):
+    def _query_by_ticket_id(self, ticket_id):
         doc = {
                 "query": {
                   "term": {
@@ -104,9 +104,10 @@ class SolrIndexer(object):
                 index=INDEX,
                 doc_type=DOC_TYPE,
                 body=doc)
-        if res["hits"]["total"] == 0:
-            return None
-        return res["hits"]["hits"][0]["_id"]
+        if res["hits"]["total"] != 0:
+            for r in res['hits']['hits']:
+                _id = r['_id']
+                self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=_id)
 
 
 class SimpleLifoQueue(list):
