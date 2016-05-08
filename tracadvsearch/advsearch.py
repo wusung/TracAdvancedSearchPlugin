@@ -92,7 +92,7 @@ class SearchBackendException(Exception):
 
 class AdvancedSearchPlugin(Component):
 	implements(
-		INavigationContributor,
+		#INavigationContributor,
 		IPermissionRequestor,
 		IRequestHandler,
 		ITemplateProvider,
