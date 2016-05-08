@@ -12,9 +12,9 @@ import pkg_resources
 import re
 
 try:
-	import simplejson as json
+    import simplejson as json
 except ImportError:
-	import json
+    import json
 
 from trac.perm import IPermissionRequestor
 from trac.ticket.api import ITicketChangeListener
@@ -41,94 +41,94 @@ import operator
 
 CONFIG_SECTION_NAME = 'advanced_search_plugin'
 CONFIG_FIELD = {
-	'menu_label': (
-		CONFIG_SECTION_NAME,
-		'menu_label',
-		'Advanced Search',
-	),
-	'ticket_status': (
-		CONFIG_SECTION_NAME,
-		'ticket_status',
-		'new, accepted, assigned, reopened, closed',
-	),
-	'ticket_status_enable': (
-		CONFIG_SECTION_NAME,
-		'ticket_status_enable',
-		'new, accepted, assigned, reopened',
-	),
+    'menu_label': (
+        CONFIG_SECTION_NAME,
+        'menu_label',
+        'Advanced Search',
+    ),
+    'ticket_status': (
+        CONFIG_SECTION_NAME,
+        'ticket_status',
+        'new, accepted, assigned, reopened, closed',
+    ),
+    'ticket_status_enable': (
+        CONFIG_SECTION_NAME,
+        'ticket_status_enable',
+        'new, accepted, assigned, reopened',
+    ),
 }
 
 # --- any() from Python 2.5 ---
 try:
-	from __builtin__ import any
+    from __builtin__ import any
 except ImportError:
-	def any(items):
-		for item in items:
-			if item:
-				return True
-		return False
+    def any(items):
+        for item in items:
+            if item:
+                return True
+        return False
 
 # ---all() from Python 2.5 ---
 try:
-	from __builtin__ import all
+    from __builtin__ import all
 except ImportError:
-	def all(items):
-		return reduce(operator.__and__, items)
+    def all(items):
+        return reduce(operator.__and__, items)
 
 __all__ = ("any", "all")
 
 
 def _get_config_values(config, option_name):
-	values = config.get(*CONFIG_FIELD[option_name])
-	return [value.strip() for value in values.split(',')]
+    values = config.get(*CONFIG_FIELD[option_name])
+    return [value.strip() for value in values.split(',')]
 
 
 class SearchBackendException(Exception):
-	"""
-	Raised by SearchBackends when there is a problem completing the search
-	query or indexing.
-	"""
+    """
+    Raised by SearchBackends when there is a problem completing the search
+    query or indexing.
+    """
 
 
 class AdvancedSearchPlugin(Component):
-	implements(
-		#INavigationContributor,
-		IPermissionRequestor,
-		IRequestHandler,
-		ITemplateProvider,
-		ITicketChangeListener,
-		IWikiChangeListener,
-		IWikiSyntaxProvider,
-	)
+        implements(
+            #INavigationContributor,
+            IPermissionRequestor,
+            IRequestHandler,
+            ITemplateProvider,
+            ITicketChangeListener,
+            IWikiChangeListener,
+            IWikiSyntaxProvider,
+        )
 
 	providers = ExtensionPoint(IAdvSearchBackend)
 
 	DEFAULT_PER_PAGE = 15
 
 	def _get_source_filters(self):
-		return set(itertools.chain(*(p.get_sources() for p in self.providers)))
+            return set(itertools.chain(*(p.get_sources() for p in self.providers)))
 
 	# INavigationContributor methods
 	def get_active_navigation_item(self, req):
-		return 'advsearch'
+            return 'advsearch'
 
 	def get_navigation_items(self, req):
-		if 'SEARCH_VIEW' in req.perm:
-			label = self.config.get(*CONFIG_FIELD['menu_label'])
-			yield ('mainnav',
-				'advsearch',
-				html.A(_(label), href=self.env.href.advsearch())
-			)
+            if 'SEARCH_VIEW' in req.perm:
+                label = self.config.get(*CONFIG_FIELD['menu_label'])
+                yield ('mainnav',
+                        'advsearch',
+                        html.A(_(label), href=self.env.href.advsearch())
+                )
 
 	# IPermissionRequestor methods
 	def get_permission_actions(self):
-		return ['SEARCH_VIEW']
+            return ['SEARCH_VIEW']
 
 	# IRequestHandler methods
 	def match_request(self, req):
-		# TODO: add /search if search module is disabled
-		return re.match(r'/advsearch?', req.path_info) is not None or \
-                     re.match(r'/search?', req.path_info) is not None
+            # TODO: add /search if search module is disabled
+            return re.match(r'/advsearch?', req.path_info) is not None or \
+                 re.match(r'/search?', req.path_info) is not None
 
 	def process_request(self, req):
 		"""
@@ -209,152 +209,152 @@ class AdvancedSearchPlugin(Component):
 		return self._send_response(req, data)
 
 	def _send_response(self, req, data):
-		"""Send the response."""
+            """Send the response."""
 
-		# look for warnings
-		if not len(self.providers):
-			add_warning(req, _('No advanced search providers found. ' +
-				'You must register a search backend.'))
+            # look for warnings
+            if not len(self.providers):
+                    add_warning(req, _('No advanced search providers found. ' +
+                            'You must register a search backend.'))
 
-		if data.get('results') and not len(data['results']):
-			add_warning(req, _('No results.'))
+            if data.get('results') and not len(data['results']):
+                    add_warning(req, _('No results.'))
 
-		add_stylesheet(req, 'common/css/search.css')
-		add_stylesheet(req, 'advsearch/css/advsearch.css')
-		add_stylesheet(req, 'advsearch/css/pikaday.css')
-		add_script(req, 'advsearch/js/advsearch.js')
-		add_script(req, 'advsearch/js/pikaday.js')
-		return 'advsearch.html', data, None
+            add_stylesheet(req, 'common/css/search.css')
+            add_stylesheet(req, 'advsearch/css/advsearch.css')
+            add_stylesheet(req, 'advsearch/css/pikaday.css')
+            add_script(req, 'advsearch/js/advsearch.js')
+            add_script(req, 'advsearch/js/pikaday.js')
+            return 'advsearch.html', data, None
 
 	def _merge_results(self, result_map, per_page):
-		"""
-		Merge results from multiple sources by score in each result. Return
-		the search results to display to the user
+            """
+            Merge results from multiple sources by score in each result. Return
+            the search results to display to the user
 
-		Example:
-		[
-			{
-				'title': 'Trac Help',
-				'href': 'http://...',
-				'date': '2011-04-20 12:34:00',
-				'author': 'admin',
-				'summary': '...'
-			},
-			...
-		]
-		"""
-		# add backend_name as a key to each result and merge lists
-		all_results = []
-		for backend_name, results in result_map.iteritems():
-			for result_dict in results:
-				result_dict['backend_name'] = backend_name
-			all_results.extend(results)
+            Example:
+            [
+                    {
+                            'title': 'Trac Help',
+                            'href': 'http://...',
+                            'date': '2011-04-20 12:34:00',
+                            'author': 'admin',
+                            'summary': '...'
+                    },
+                    ...
+            ]
+            """
+            # add backend_name as a key to each result and merge lists
+            all_results = []
+            for backend_name, results in result_map.iteritems():
+                for result_dict in results:
+                        result_dict['backend_name'] = backend_name
+                all_results.extend(results)
 
-		# sort and return results for the page
-		all_results.sort(key=itemgetter('score'), reverse=True)
-		return all_results[:per_page]
+            # sort and return results for the page
+            all_results.sort(key=itemgetter('score'), reverse=True)
+            return all_results[:per_page]
 
 	def _add_href_to_results(self, results):
-		"""Add an href key/value to each result dict based on source."""
-		for result in results:
-			if result['source'] == 'wiki':
-				result['href'] = self.env.href.wiki(result['title'])
-			if result['source'] == 'ticket':
-				result['href'] = self.env.href.ticket(result['ticket_id'])
+            """Add an href key/value to each result dict based on source."""
+            for result in results:
+                if result['source'] == 'wiki':
+                    result['href'] = self.env.href.wiki(result['title'])
+                if result['source'] == 'ticket':
+                    result['href'] = self.env.href.ticket(result['ticket_id'])
 
 	def _get_filter_dicts(self, req_args):
-		"""Map filters to filter dicts for the frontend."""
-		return [
-			{'name': filter, 'active': req_args.get(filter)}
-			for filter in self._get_source_filters()
-		]
+            """Map filters to filter dicts for the frontend."""
+            return [
+                {'name': filter, 'active': req_args.get(filter)}
+                for filter in self._get_source_filters()
+            ]
 
 	def _get_ticket_statuses(self, req_args):
-		"""Create map of ticket statuses."""
-		status_values = _get_config_values(self.config, 'ticket_status')
-		statuses = []
+            """Create map of ticket statuses."""
+            status_values = _get_config_values(self.config, 'ticket_status')
+            statuses = []
 
-		# Default to new/assigned/reopened
-		defaults = set(_get_config_values(self.config, 'ticket_status_enable'))
-		if any((req_args.get('status_%s' % s) for s in status_values)):
-			defaults = set()
+            # Default to new/assigned/reopened
+            defaults = set(_get_config_values(self.config, 'ticket_status_enable'))
+            if any((req_args.get('status_%s' % s) for s in status_values)):
+                defaults = set()
 
-		for status in status_values:
-			field_name = 'status_%s' % status
-			statuses.append({
-				'name': status,
-				'active': req_args.get(field_name) or (status in defaults),
-				'field_name': field_name,
-			})
-		return statuses
+            for status in status_values:
+                field_name = 'status_%s' % status
+                statuses.append({
+                    'name': status,
+                    'active': req_args.get(field_name) or (status in defaults),
+                    'field_name': field_name,
+                })
+            return statuses
 
 	def _get_quickjump(self, req, query):
-		"""Find quickjump requests if the search comes from the searchbox
-		in the header.  The search is assumed to be from the header searchbox
-		if no page or per_page arguments are found.
-		"""
-		if req.args.get('page') or req.args.get('per_page'):
-			return None
+            """Find quickjump requests if the search comes from the searchbox
+            in the header.  The search is assumed to be from the header searchbox
+            if no page or per_page arguments are found.
+            """
+            if req.args.get('page') or req.args.get('per_page'):
+                return None
 
-		link = extract_link(self.env,
-			Context.from_request(req, 'advsearch'), query)
-		if isinstance(link, Element):
-			return link.attrib.get('href')
+            link = extract_link(self.env,
+                    Context.from_request(req, 'advsearch'), query)
+            if isinstance(link, Element):
+                return link.attrib.get('href')
 
 	# ITemplateProvider methods
 	def get_htdocs_dirs(self):
-		return [('advsearch', pkg_resources.resource_filename(__name__, 'htdocs'))]
+            return [('advsearch', pkg_resources.resource_filename(__name__, 'htdocs'))]
 
 	def get_templates_dirs(self):
-		return [pkg_resources.resource_filename(__name__, 'templates')]
+            return [pkg_resources.resource_filename(__name__, 'templates')]
 
 	# IWikiSyntaxProvider methods
 	def get_wiki_syntax(self):
-		return []
+            return []
 
 	def get_link_resolvers(self):
-		yield ('advsearch', self._format_link)
+            yield ('advsearch', self._format_link)
 
 	def _format_link(self, formatter, ns, target, label):
-		path, query, fragment = formatter.split_link(target)
-		if query:
-			href = formatter.href.advsearch() + query.replace(' ', '+')
-		else:
-			href = target
-		return tag.a(label, class_='search', href=href)
+            path, query, fragment = formatter.split_link(target)
+            if query:
+                href = formatter.href.advsearch() + query.replace(' ', '+')
+            else:
+                href = target
+            return tag.a(label, class_='search', href=href)
 
 	# IWikiChangeListener methods
 	def _update_wiki_page(self, page):
-		doc = {
-			'source': 'wiki',
-			'id': 'wiki_%s' % page.name,
-		}
-		for prop in ('name', 'version', 'time', 'author', 'text', 'comment'):
-			doc[prop] = getattr(page, prop)
-		for provider in self.providers:
-			try:
-				provider.upsert_document(doc)
-			except SearchBackendException, e:
-				self.log.error('SearchBackendException: %s' % e)
+            doc = {
+                'source': 'wiki',
+                'id': 'wiki_%s' % page.name,
+            }
+            for prop in ('name', 'version', 'time', 'author', 'text', 'comment'):
+                doc[prop] = getattr(page, prop)
+            for provider in self.providers:
+                try:
+                    provider.upsert_document(doc)
+                except SearchBackendException, e:
+                    self.log.error('SearchBackendException: %s' % e)
 
 	def _delete_wiki_page(self, name):
-		identifier = 'wiki_%s' % (name)
-		for provider in self.providers:
-			try:
-				provider.delete_document(identifier)
-			except SearchBackendException, e:
-				self.log.error('SearchBackendException: %s' % e)
+            identifier = 'wiki_%s' % (name)
+            for provider in self.providers:
+                try:
+                    provider.delete_document(identifier)
+                except SearchBackendException, e:
+                    self.log.error('SearchBackendException: %s' % e)
 
-	wiki_page_added = _update_wiki_page
-	wiki_page_version_deleted = _update_wiki_page
-	wiki_page_deleted = lambda self, page: self._delete_wiki_page(page.name)
+            wiki_page_added = _update_wiki_page
+            wiki_page_version_deleted = _update_wiki_page
+            wiki_page_deleted = lambda self, page: self._delete_wiki_page(page.name)
 
 	def wiki_page_changed(self, page, version, t, comment, author, ipnr):
-		self._update_wiki_page(page)
+            self._update_wiki_page(page)
 
 	def wiki_page_renamed(self, page, old_name):
-		self._delete_wiki_page(old_name)
-		self._update_wiki_page(page)
+            self._delete_wiki_page(old_name)
+            self._update_wiki_page(page)
 
 	# ITicketChangeListener methods
 	def ticket_created(self, ticket):
@@ -401,13 +401,13 @@ class AdvancedSearchPlugin(Component):
 				self.log.error('SearchBackendException: %s' % e)
 
 	def ticket_changed(self, ticket, comment, author, old_values):
-		self.ticket_created(ticket)
+            self.ticket_created(ticket)
 
 	def ticket_comment_modified(self, ticket, cdate, author, comment, old_comment):
-		self.ticket_created(ticket)
+            self.ticket_created(ticket)
 
 	def ticket_change_deleted(self, ticket, cdate, changes):
-		self.ticket_created(ticket)
+            self.ticket_created(ticket)
 
 
 class StartPoints(object):
