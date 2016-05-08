@@ -39,7 +39,7 @@ Stable, and active.
 Requirements
 ------------
 
-The following python packages are required for the solr backend.
+The following python packages are required for the Elasticsearch backend.
 
 Python client for Elasticsearch (https://pypi.python.org/pypi/elasticsearch)
 
@@ -57,15 +57,9 @@ python setup.py bdist_egg
 cp ./dist/TracAdvancedSearch-*.egg <trac_environment_home>/plugins
 ```
 
-2. Setup the search backend.  If you're using solr, copy and modify the
-configuration files provided.
-```
-cp ./solr/conf/* <solr_home>/conf
-```
+2. Configure your trac.ini (see the Configuration section below).
 
-3. Configure your trac.ini (see the Configuration section below).
-
-4. Restart the trac server. This will differ based on how you are running trac
+3. Restart the trac server. This will differ based on how you are running trac
 (apache, tracd, etc).
 
 That's it. You should see an Advanced Search button in the main navbar.
@@ -76,7 +70,7 @@ Configuration
 -------------
 
 In `trac.ini` you'll need to configure whichever search backend you're using.  If
-you're using the default pysolr backend, add something like this:
+you're using the default elasticsearch  backend, add something like this:
 
 ```
 [advanced_search_backend]
@@ -89,7 +83,7 @@ menu_label = Real Search
 
 button_label and timeout are both optional.
 
-The default Elasticsearch backend queries to solr for indexing synchronously.
+The default Elasticsearch backend queries to server for indexing synchronously.
 If you want to do indexing asynchronously, add like this:
 
 ```
