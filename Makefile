@@ -1,3 +1,5 @@
+init:
+	pip install -r requirements.txt
 
 build:
 	python setup.py bdist_egg
