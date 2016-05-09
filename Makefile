@@ -14,8 +14,7 @@ build:
 
 rebuild: clean build
 
-patch:
-	bump -p	-r
+patch: minor
 	git add VERSION
 	git commit -m "chore: Bump to v$(VERSION)"
 	git tag v$(VERSION)
