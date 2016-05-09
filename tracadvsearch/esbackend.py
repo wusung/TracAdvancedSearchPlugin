@@ -24,26 +24,36 @@ INDEX = 'trac'
 DOC_TYPE = 'ticket'
 CONFIG_SECTION_NAME = 'advanced_search_backend'
 CONFIG_FIELD = {
-	'elastic_search_url': (
-		CONFIG_SECTION_NAME,
-		'elastic_search_url',
-		None,
-	),
-	'timeout': (
-		CONFIG_SECTION_NAME,
-		'timeout',
-		30,
-	),
-	'async_indexing': (
-		CONFIG_SECTION_NAME,
-		'async_indexing',
-		False,
-	),
-	'async_queue_maxsize': (
-		CONFIG_SECTION_NAME,
-		'async_queue_maxsize',
-		0,
-	),
+    'elastic_search_url': (
+	    CONFIG_SECTION_NAME,
+	    'elastic_search_url',
+	    None,
+    ),
+    'timeout': (
+	    CONFIG_SECTION_NAME,
+	    'timeout',
+	    30,
+    ),
+    'async_indexing': (
+	    CONFIG_SECTION_NAME,
+	    'async_indexing',
+	    False,
+    ),
+    'async_queue_maxsize': (
+	    CONFIG_SECTION_NAME,
+	    'async_queue_maxsize',
+	    0,
+    ),
+    'insensitive_group': (
+        CONFIG_SECTION_NAME,
+        'insensitive_group',
+        'intern,outsourcing',
+    ),
+    'sensitive_keyword': (
+        CONFIG_SECTION_NAME,
+        'isensitive_keyword',
+        'secret',
+    ),        
 }
 
 
@@ -259,6 +269,9 @@ class PyElasticSearchBackEnd(Component):
 		else:
 			self.indexer = SolrIndexer(self)
 
+                self.sensitive_keyword = self.config.get(*CONFIG_FIELD['sensitive_keyword']).strip()
+                self.insensitive_group = [g.strip().upper() for g in self.config.get(*CONFIG_FIELD['insensitive_group']).split(',')]
+
 	def get_name(self):
 		"""Return friendly name for this IAdvSearchBackend provider."""
 		return self.__class__.__name__
@@ -313,7 +326,20 @@ class PyElasticSearchBackEnd(Component):
 
 		# add criteria of all fields
 		source = self._string_from_filters(criteria.get('source')) or 'wiki ticket'
-		author = self._string_from_input(criteria.get('author'))
+		author = self._string_from_input(criteria.get('author')) or ''
+                username = self._string_from_input(criteria.get('username')) or ''
+
+                q_query = []
+                if criteria['q']:
+                    q_query = [{
+                                "multi_match": {
+                                  "query": criteria['q'],
+                                  "fuzziness": 2,
+                                  "type": "most_fields",
+                                  "fields": ["name", "text"],
+                                  "operator": "or"
+                                }
+                              }]
 
                 time_query = []
                 if criteria.get('date_start') or criteria.get('date_end'):
@@ -346,22 +372,63 @@ class PyElasticSearchBackEnd(Component):
 
                 author_query = []
                 if self._string_from_input(criteria.get('author')):
-                    author_query = [{ 'match': { 'author': self._string_from_input(criteria.get('author')) }}]
+                    author_query = [{ 'match': { 'author': author }}]
 
-                doc = {
+		cc_query = []
+                if username:
+		    cc_query = [{
+                                "multi_match": {
+                                  "operator": "or",
+                                  "query": username,
+                                  "fuzziness": 2,
+                                  "fields": [
+                                    "cc",
+                                    "owner",
+                                    "author"
+                                  ],
+                                  "type": "most_fields"
+                                }
+                              }]
+
+                perms = criteria.get('perms')
+
+                is_trac_admin = 'TRAC_ADMIN' in perms
+
+                self.log.debug([k.upper() for k, v in perms.iteritems()])
+                self.log.debug(self.insensitive_group)
+                is_insensitive = len([i for i in [k.upper() for k, v in perms.iteritems()] \
+                        if i.upper() in self.insensitive_group]) > 0
+                self.log.debug("is_trac_admin=%s, is_insensitive=%s", is_trac_admin, is_insensitive)
+                if is_trac_admin:
+                #if False:
+                    # query doc for admin users
+                    doc_type = 'admin'
+                    doc = {
                         "query": {
                           "bool": {
-                            "must": [
-                              {
-                                "multi_match": {
-                                  "query": criteria['q'],
-                                  "fuzziness": 2,
-                                  "type": "most_fields",
-                                  "fields": ["name", "text"],
-                                  "operator": "or"
-                                }
-                              }
-                            ] + status_query 
+                            "must": [] 
+                              + q_query
+                              + status_query 
+                              + source_query 
+                              + author_query
+                              + time_query
+                          }
+                        },
+                        "from": start,
+                        "size": size,
+                        "sort": sort
+                    } 
+                elif is_insensitive:
+                #elif False:
+                    # query doc for restricted users (e.q. intern or outsourcing)
+                    doc_type = 'insensitive'
+                    doc = {
+                      "query": {
+                          "bool": {
+                            "must": [] 
+                              + q_query
+                              + cc_query
+                              + status_query 
                               + source_query 
                               + author_query
                               + time_query
@@ -371,8 +438,51 @@ class PyElasticSearchBackEnd(Component):
                         "size": size,
                         "sort": sort
                       } 
+                else: 
+                    # query doc for non-admin users
+                    doc_type = 'auth_user'
+                    doc = {
+                      "query": {
+                        "bool": {
+                          "must": [] 
+                            + q_query
+                            + cc_query
+                            + status_query 
+                            + source_query 
+                            + author_query
+                            + time_query
+                        }
+                      },
+                      "from": start,
+                      "size": size,
+                      "sort": sort
+                    }
+                    {
+                      "filtered": {
+                        "query": {
+                          "bool": {
+                            "must": [] 
+                              + q_query 
+                              + status_query 
+                              + source_query 
+                              + author_query
+                              + time_query
+                          }
+                        },
+                        "filter": {
+                          "not": {
+                            "filter": {
+                              "keywords": "secret"
+                            }
+                          }
+                        }
+                      },
+                      "from": start,
+                      "size": size,
+                      "sort": sort
+                    }
 
-                self.log.debug('The query doc is %s' % doc)
+                self.log.debug('The query doc is %s=%s' % (doc_type, doc))
                 
                 results = self.conn.search(
                         index=INDEX,
@@ -474,3 +584,4 @@ class PyElasticSearchBackEnd(Component):
 
                 print('=' * 80)
                 print()
+

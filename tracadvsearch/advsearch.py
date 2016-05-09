@@ -30,6 +30,8 @@ from trac.core import Component
 from trac.core import ExtensionPoint
 from trac.core import implements
 from trac.mimeview import Context
+from trac.perm import PermissionSystem
+from trac.perm import IPermissionGroupProvider
 from trac.util.html import html
 from trac.util.presentation import Paginator
 from trac.util.translation import _
@@ -56,8 +58,17 @@ CONFIG_FIELD = {
         'ticket_status_enable',
         'new, accepted, assigned, reopened',
     ),
+    'insensitive_group': (
+        CONFIG_SECTION_NAME,
+        'insensitive_group',
+        'intern,outsourcing',
+    ),
+    'sensitive_keyword': (
+        CONFIG_SECTION_NAME,
+        'isensitive_keyword',
+        'secret',
+    ),
 }
-
 # --- any() from Python 2.5 ---
 try:
     from __builtin__ import any
@@ -102,6 +113,7 @@ class AdvancedSearchPlugin(Component):
         )
 
 	providers = ExtensionPoint(IAdvSearchBackend)
+        group_providers = ExtensionPoint(IPermissionGroupProvider)
 
 	DEFAULT_PER_PAGE = 15
 
@@ -154,6 +166,7 @@ class AdvancedSearchPlugin(Component):
 
 		sort_order = req.args.getfirst('sort_order', 'relevance')
 
+                perms = PermissionSystem(self.env).get_user_permissions(req.perm.username)
 		data = {
 			'source': self._get_filter_dicts(req.args),
 			'author': [auth for auth in req.args.getlist('author') if auth],
@@ -164,7 +177,9 @@ class AdvancedSearchPlugin(Component):
 			'per_page': per_page,
 			'sort_order': sort_order,
 			'ticket_statuses': self._get_ticket_statuses(req.args),
-                        'from': req.args.getfirst('from')
+                        'from': req.args.getfirst('from'),
+                        'username': req.perm.username,
+                        'perms': perms
 		}
 
 		# Initial page request
@@ -176,6 +191,7 @@ class AdvancedSearchPlugin(Component):
 		if quickjump:
 			req.redirect(quickjump)
 
+                self.log.debug(data)
 		# perform query using backend if q is set
 		result_map = {}
 		total_count = 0
@@ -376,6 +392,7 @@ class AdvancedSearchPlugin(Component):
 			'type',
 			'time',
 			'changetime',
+                        'cc',
 			'component',
 			'severity',
 			'priority',
@@ -409,6 +426,24 @@ class AdvancedSearchPlugin(Component):
 	def ticket_change_deleted(self, ticket, cdate, changes):
             self.ticket_created(ticket)
 
+	def _get_groups(self, user):
+	    groups = set([user])
+	    for provider in self.group_providers:
+		for group in provider.get_permission_groups(user):
+		    groups.add(group)
+
+            #groups += PermissionSystem(self.env).get_user_permissions(user)
+
+	    perms = PermissionSystem(self.env).get_user_permission(user)
+	    repeat = True
+	    while repeat:
+		repeat = False
+		for subject, action in perms:
+		    if subject in groups and not action.isupper() and action not in groups:
+			groups.add(action)
+			repeat = True
+
+	    return groups
 
 class StartPoints(object):
 	"""Format and parse start points for search."""
