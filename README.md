@@ -78,7 +78,7 @@ elastic_search_url = http://localhost:9200/
 timeout = 30
 
 [advanced_search_plugin]
-menu_label = Real Search
+menu_label = Advanced Search
 ```
 
 button_label and timeout are both optional.
@@ -92,6 +92,19 @@ async_indexing = true
 async_queue_maxsize = 10000  # if 0, the queue size is infinity
 ...
 ```
+
+For *insensitive_group*, which means users in these groups will be granted to query the tickets only if he/she is reporter, ticket owner, or in cc list.
+
+For *sensitive_keyword* sets to secret, which means the tickets with keyword *secret* only can be viewed or searched by the owner, reporter, TRAC_ADMIN or in cc list. 
+```
+[advanced_search_backend]
+
+insensitive_group = intern,outsourcing
+sensitive_keyword = secret
+```
+
+*insensitive_group* and *sensitive_keyword* are both optional. The fault value of insensitive_group is 'intern,outsourcing'. The default value of sensitive_keyword is 'secret'.
+
 
 You'll also need to enable the components.
 
