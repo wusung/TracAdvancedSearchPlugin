@@ -56,7 +56,7 @@ CONFIG_FIELD = {
     'ticket_status_enable': (
         CONFIG_SECTION_NAME,
         'ticket_status_enable',
-        'new, accepted, assigned, reopened',
+        'new, accepted, assigned, reopened, closed',
     ),
     'insensitive_group': (
         CONFIG_SECTION_NAME,
