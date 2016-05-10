@@ -16,18 +16,18 @@ rebuild: clean build
 
 patch: 
 	bump -p -r
-	git add VERSION
-	git commit -m "chore: Bump to v$(VERSION)"
-	git tag v$(VERSION)
-	git push origin $(BRANCH)
+	$(MAKE) tag
 
 major:
 	bump -m -r
+	$(MAKE) tag
 
 minor:
 	bump -n -r
+	$(MAKE) tag
 
 tag:
-	git tag v$(VERSION)
+	git add VERSION
 	git commit -m "chore: Bump to v$(VERSION)"
+	git tag v$(VERSION)
 	git push origin $(BRANCH)
