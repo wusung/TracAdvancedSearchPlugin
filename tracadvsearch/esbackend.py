@@ -77,7 +77,7 @@ def _get_incremental_value(initial, next_, step):
 			yield next_
 
 
-class SolrIndexer(object):
+class ElasticSearchIndexer(object):
     """Synchronous Indexer for PyElasticSearchBackEnd."""
     implements(IIndexer)
 
@@ -135,8 +135,8 @@ class SimpleLifoQueue(list):
 		return len(self) == 0
 
 
-class AsyncSolrIndexer(threading.Thread):
-	"""Asynchronous Indexer for PySolrSearchBackEnd."""
+class AsyncElasticSearchIndexer(threading.Thread):
+	"""Asynchronous Indexer for PyElasticSearchBackEnd."""
 	implements(IIndexer)
 
 	SLEEP_INTERVAL = (60, 3600, 10)
@@ -215,9 +215,9 @@ class AsyncSolrIndexer(threading.Thread):
 			json = self.backend.conn.decoder.decode(res)
 			available = json.get('status') == 'OK'
 			if not available:
-				self.backend.log.warn('%s: Solr is not available: %s' % (self._name, r))
+				self.backend.log.warn('%s: Elasticsearch is not available: %s' % (self._name, r))
 		except Exception, e:
-			self.backend.log.error('%s: Solr may be down: %s' % (self._name, e))
+			self.backend.log.error('%s: Elasticsearch may be down: %s' % (self._name, e))
 		return available
 
 	def upsert(self, doc):
@@ -251,19 +251,19 @@ class PyElasticSearchBackEnd(Component):
 	SPECIAL_CHARACTERS = r'''+-&|!(){}[]^"~*?:\\'''
 
 	def __init__(self):
-		solr_url = self.config.get(*CONFIG_FIELD['elastic_search_url'])
+		elastic_search_url = self.config.get(*CONFIG_FIELD['elastic_search_url'])
 		timeout = self.config.getfloat(*CONFIG_FIELD['timeout'])
-		if not solr_url:
-			raise ConfigurationError('PySolrSearchBackend must be configured in trac.ini')
-                self.conn = Elasticsearch(solr_url)
+		if not elastic_search_url:
+			raise ConfigurationError('PyElasticSearchBackend must be configured in trac.ini')
+                self.conn = Elasticsearch(elastic_search_url)
 
 		self.async_indexing = self.config.getbool(*CONFIG_FIELD['async_indexing'])
 		if self.async_indexing:
 			maxsize = self.config.getint(*CONFIG_FIELD['async_queue_maxsize'])
-			self.indexer = AsyncSolrIndexer(self, maxsize)
+			self.indexer = AsyncElasticSearchIndexer(self, maxsize)
 			self.indexer.start()
 		else:
-			self.indexer = SolrIndexer(self)
+			self.indexer = ElasticSearchIndexer(self)
 
                 self.sensitive_keyword = self.config.get(*CONFIG_FIELD['sensitive_keyword']).strip()
                 self.insensitive_group = [g.strip().upper() for g in self.config.get(*CONFIG_FIELD['insensitive_group']).split(',')]
