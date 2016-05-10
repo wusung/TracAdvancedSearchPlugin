@@ -87,8 +87,7 @@ class SolrIndexer(object):
     def upsert(self, doc):
         try:
             self.backend.log.debug(doc)
-            self.delete(doc['ticket_id'])
-            self.backend.conn.index(index=INDEX, doc_type=DOC_TYPE, body=doc)
+            self.backend.conn.index(index=INDEX, doc_type=DOC_TYPE, body=doc, id=doc['ticket_id'])
             self.backend.log.debug(doc)
         except Exception, e:
             raise SearchBackendException(e)
@@ -96,9 +95,6 @@ class SolrIndexer(object):
     def delete(self, ticket_id):
         try:
             _id = self._query_by_ticket_id(ticket_id)
-            #self.backend.log.debug("delete old _id=%s", _id)
-            #if _id:
-            #    self.backend.conn.delete(index=INDEX, doc_type=DOC_TYPE, id=_id)
         except Exception, e:
             raise SearchBackendException(e)
 
