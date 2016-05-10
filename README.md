@@ -83,16 +83,6 @@ menu_label = Advanced Search
 
 button_label and timeout are both optional.
 
-The default Elasticsearch backend queries to server for indexing synchronously.
-If you want to do indexing asynchronously, add like this:
-
-```
-[advanced_search_backend]
-async_indexing = true
-async_queue_maxsize = 10000  # if 0, the queue size is infinity
-...
-```
-
 For *insensitive_group*, which means users in these groups will be granted to query the tickets only if he/she is reporter, ticket owner, or in cc list.
 
 For *sensitive_keyword* sets to secret, which means the tickets with keyword *secret* only can be viewed or searched by the owner, reporter, TRAC_ADMIN or in cc list. 
