@@ -1,5 +1,3 @@
 elasticsearch==2.3.0
--e git+https://github.com/edgewall/genshi.git@3206aed8a69aac23dbaf85d6cf81083e8c7df268#egg=Genshi
-pkg-resources==0.0.0
--e git+https://github.com/edgewall/trac.git@ac1e8f4e6640e90c2dd06864863a7d4661f55153#egg=Trac
+-e git+https://github.com/edgewall/genshi.git@master#egg=Genshi
 urllib3==1.15.1
