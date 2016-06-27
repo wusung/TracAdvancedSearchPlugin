@@ -1,0 +1,3 @@
+An advanced search plugin for the open source Trac project (http://trac.edgewall.org/). This Trac plugin allows you to use a full-text search engine (such as Apache Solr) as the search backend for performing search in Trac. This plugin also includes a backend for Elasticsearch (https://www.elastic.co/products/elasticsearch), but other plugins can use the extension point provided by this plugin to query a different backend.
+
+WWW: https://github.com/wusung/TracAdvancedSearchPlugin
