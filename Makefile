@@ -1,8 +1,14 @@
 BRANCH		= `git rev-parse --abbrev-ref HEAD`
 VERSION		= `cat VERSION`
+TRACD_CONFIG_PATH = '../test'
 
 init:
 	pip install -r requirements.txt
+
+.PHONY: start-server
+s server tracd start-tracd: start-server
+start-server:
+	tracd -r --port 8001 -b 0.0.0.0 $(TRACD_CONFIG_PATH)
 
 clean:
 	rm -rf build 
