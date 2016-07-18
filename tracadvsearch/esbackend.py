@@ -447,21 +447,43 @@ class PyElasticSearchBackEnd(Component):
                 else: 
                     # query doc for non-admin users
                     doc_type = 'auth_user'
-                    doc = {
-                      "query": {
+
+                    # all tickets belongs to the user
+                    auth_doc = [{
                         "bool": {
-                          "must": []
-                            + q_query
-                            + status_query
-                            + source_query
-                            + author_query
-                            + time_query
-                            + not_secret_query
+                            "must": []
+                                    + q_query
+                                    + cc_query
+                                    + status_query
+                                    + source_query
+                                    + author_query
+                                    + time_query
                         }
-                      },
-                      "from": start,
-                      "size": size,
-                      "sort": sort
+                    }]
+
+                    # all non-secret tickets
+                    not_secret_doc = [{
+                        "bool": {
+                            "must": []
+                                    + q_query
+                                    + status_query
+                                    + source_query
+                                    + author_query
+                                    + time_query
+                                    + not_secret_query
+                        }
+                    }]
+
+                    doc = {
+                        "query": {
+                            "constant_score": {
+                                "filter": {
+                                    "bool": {
+                                        "should": [] + auth_doc + not_secret_doc
+                                    }
+                                }
+                            }
+                        }
                     }
 
                 self.log.debug('The query doc is %s=%s' % (doc_type, doc))
