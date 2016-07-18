@@ -370,9 +370,19 @@ class PyElasticSearchBackEnd(Component):
                 if self._string_from_input(criteria.get('author')):
                     author_query = [{ 'match': { 'author': author }}]
 
-		cc_query = []
+                not_secret_query = []
+                if self.sensitive_keyword:
+                    not_secret_query = [{
+                      "bool": {
+                        "must_not": {
+                          "term": {"keywords": self.sensitive_keyword}
+                        }
+                      }
+                    }]
+
+                cc_query = []
                 if username:
-		    cc_query = [{
+                    cc_query = [{
                                 "multi_match": {
                                   "operator": "or",
                                   "query": username,
@@ -440,37 +450,13 @@ class PyElasticSearchBackEnd(Component):
                     doc = {
                       "query": {
                         "bool": {
-                          "must": [] 
+                          "must": []
                             + q_query
-                            + cc_query
-                            + status_query 
-                            + source_query 
+                            + status_query
+                            + source_query
                             + author_query
                             + time_query
-                        }
-                      },
-                      "from": start,
-                      "size": size,
-                      "sort": sort
-                    }
-                    {
-                      "filtered": {
-                        "query": {
-                          "bool": {
-                            "must": [] 
-                              + q_query 
-                              + status_query 
-                              + source_query 
-                              + author_query
-                              + time_query
-                          }
-                        },
-                        "filter": {
-                          "not": {
-                            "filter": {
-                              "keywords": "secret"
-                            }
-                          }
+                            + not_secret_query
                         }
                       },
                       "from": start,
