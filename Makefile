@@ -15,6 +15,7 @@ clean:
 	rm -rf TracAdvancedSearch.egg-info/
 	rm -rf dist
 
+.PHONY: build
 build:
 	python setup.py bdist_egg
 
